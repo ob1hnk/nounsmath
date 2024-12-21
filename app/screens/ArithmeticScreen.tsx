@@ -29,7 +29,6 @@ export default function ArithmeticScreen({ navigation }) {
   const [correctCount, setCorrectCount] = useState<number>(0);
   const [incorrectCount, setIncorrectCount] = useState<number>(0);
   const [streak, setStreak] = useState<number>(0);
-  const [streakMessage, setStreakMessage] = useState<string>("");
   const [timeLeft, setTimeLeft] = useState<number>(150);
   const [gameActive, setGameActive] = useState<boolean>(false);
   const [showResults, setShowResults] = useState<boolean>(false);
@@ -97,7 +96,6 @@ export default function ArithmeticScreen({ navigation }) {
     setShowResults(false);
     setUserAnswer("");
     setStreak(0);
-    setStreakMessage("");
     startGame();
   };
 
@@ -164,23 +162,6 @@ export default function ArithmeticScreen({ navigation }) {
 
           {gameActive && (
             <>
-              {streakMessage && (
-                <Animated.Text
-                  style={[
-                    GlobalStyles.title,
-                    {
-                      position: "absolute",
-                      top: 100,
-                      flex: 0.5,
-                      marginTop: 10,
-                      color: "#FFD700",
-                      opacity: streakAnim,
-                    },
-                  ]}
-                >
-                  {streakMessage}
-                </Animated.Text>
-              )}
               <Animated.Text
                 style={[
                   GlobalStyles.title,
@@ -197,7 +178,7 @@ export default function ArithmeticScreen({ navigation }) {
                 Type your answer
               </Animated.Text>
               <View
-                style={{ flex: 1.7, justifyContent: "center", marginTop: 100 }}
+                style={{ flex: 1.7, justifyContent: "center", marginTop: 60 }}
               >
                 <Text
                   style={[

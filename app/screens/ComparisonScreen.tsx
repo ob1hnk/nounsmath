@@ -59,7 +59,7 @@ export default function ComparisonScreen() {
     if (streak % 5 === 0 && streak !== 0) {
       bonus = 5 * streak;
     }
-    return correctCount * 10 + bonus;
+    return correctCount * 5 + bonus;
   };
 
   const saveXP = async (xp) => {
@@ -359,6 +359,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
+    bottom: 100,
   },
   button: {
     width: 80,

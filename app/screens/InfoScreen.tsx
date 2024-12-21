@@ -14,7 +14,7 @@ export default function InfoScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={{ paddingTop: 60 }}>
-        <Text style={styles.title}>Learn Math with Nouns!</Text>
+        <Text style={styles.title}>Practice Math with Nouns!</Text>
       </View>
       <View style={{ alignItems: "center" }}>
         <Image
