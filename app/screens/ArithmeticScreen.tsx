@@ -53,7 +53,7 @@ export default function ArithmeticScreen({ navigation }) {
   const startGame = () => {
     setQuestion(generateQuestion());
     setGameActive(true);
-    setTimeLeft(10);
+    setTimeLeft(150);
   };
 
   const endGame = () => {

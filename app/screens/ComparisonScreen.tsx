@@ -43,7 +43,7 @@ export default function ComparisonScreen() {
   const startGame = () => {
     generateComparison();
     setGameActive(true);
-    setTimeLeft(10);
+    setTimeLeft(150);
   };
 
   const endGame = () => {
