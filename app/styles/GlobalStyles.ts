@@ -11,11 +11,13 @@ export const GlobalStyles = StyleSheet.create({
     fontSize: 36,
     fontFamily: "LondrinaSolid-Regular",
     marginBottom: 10,
+    textAlign: "center",
   },
   text: {
     fontSize: 24,
     fontFamily: "LondrinaSolid-Light",
     marginBottom: 10,
+    textAlign: "center",
   },
   gridContainer: {
     flexDirection: "row",

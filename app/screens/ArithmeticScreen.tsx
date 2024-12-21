@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Animated } from "react-native";
 import {
+  Animated,
   View,
   Text,
   TextInput,
@@ -19,54 +19,87 @@ import {
   getRandomMessage,
 } from "../features/arithmetic/logic";
 import { GlobalStyles } from "../styles/GlobalStyles";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export default function ArithmeticScreen() {
+export default function ArithmeticScreen({ navigation }) {
   const [question, setQuestion] = useState<Question>(generateQuestion());
   const [userAnswer, setUserAnswer] = useState<string>("");
   const [resultMessage, setResultMessage] = useState<string>("");
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null); // isCorrect 상태 추가
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [correctCount, setCorrectCount] = useState<number>(0);
   const [incorrectCount, setIncorrectCount] = useState<number>(0);
   const [streak, setStreak] = useState<number>(0);
   const [streakMessage, setStreakMessage] = useState<string>("");
+  const [timeLeft, setTimeLeft] = useState<number>(150);
+  const [gameActive, setGameActive] = useState<boolean>(false);
+  const [showResults, setShowResults] = useState<boolean>(false);
+  const [earnedXP, setEarnedXP] = useState<number>(0);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const streakAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-      Animated.delay(2000),
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fadeAnim]);
-
-  useEffect(() => {
-    if (streak !== 0 && streak % 5 === 0) {
-      setStreakMessage(`${streak} in a row!`);
-
-      Animated.sequence([
-        Animated.timing(streakAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(streakAnim, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-      ]).start(() => setStreakMessage(""));
+    let timerId: NodeJS.Timeout;
+    if (gameActive && timeLeft > 0) {
+      timerId = setInterval(() => {
+        setTimeLeft((prevTime) => prevTime - 1);
+      }, 1000);
+    } else if (timeLeft === 0 && gameActive) {
+      endGame();
     }
-  }, [streak]);
+    return () => clearInterval(timerId);
+  }, [gameActive, timeLeft]);
+
+  const startGame = () => {
+    setQuestion(generateQuestion());
+    setGameActive(true);
+    setTimeLeft(10);
+  };
+
+  const endGame = () => {
+    setGameActive(false);
+    setShowResults(true);
+    const xp = calculateXP();
+    setEarnedXP(xp);
+    saveXP(xp);
+  };
+
+  const calculateXP = () => {
+    let bonus = 0;
+    if (streak % 5 === 0 && streak !== 0) {
+      bonus = 5 * streak;
+    }
+    return correctCount * 10 + bonus;
+  };
+
+  const saveXP = async (xp) => {
+    try {
+      const storedXP = await AsyncStorage.getItem("userXP");
+      const storedBestScore = await AsyncStorage.getItem("bestScore");
+
+      const currentXP = parseInt(storedXP, 10) || 0;
+      const currentBestScore = parseInt(storedBestScore, 10) || 0;
+
+      const newXP = currentXP + xp;
+
+      const newBestScore = Math.max(currentBestScore, xp);
+
+      await AsyncStorage.setItem("userXP", newXP.toString());
+      await AsyncStorage.setItem("bestScore", newBestScore.toString());
+
+      console.log("XP and best score updated:", newXP, newBestScore);
+    } catch (error) {
+      console.error("Failed to save XP or best score:", error);
+    }
+  };
+
+  const handleContinue = () => {
+    setShowResults(false);
+    setUserAnswer("");
+    setStreak(0);
+    setStreakMessage("");
+    startGame();
+  };
 
   const handleCheckAnswer = () => {
     if (userAnswer.trim() === "") {
@@ -107,90 +140,142 @@ export default function ArithmeticScreen() {
             <Text style={[GlobalStyles.text]}>
               Correct: {correctCount} Incorrect: {incorrectCount}
             </Text>
-          </View>
-          {streakMessage ? (
-            <Animated.Text
-              style={[
-                GlobalStyles.title,
-                {
-                  position: "absolute",
-                  top: 100,
-                  flex: 0.5,
-                  marginTop: 10,
-                  color: "#FFD700", // gold
-                  opacity: streakAnim,
-                },
-              ]}
-            >
-              {streakMessage}
-            </Animated.Text>
-          ) : null}
-          <Animated.Text
-            style={[
-              GlobalStyles.title,
-              {
-                position: "absolute",
-                top: 100,
-                flex: 0.5,
-                marginTop: 10,
-                color: "#FFF006", // white
-                opacity: fadeAnim,
-              }, // yellow
-            ]}
-          >
-            Type your answer
-          </Animated.Text>
-          <View style={{ flex: 1.7, justifyContent: "center", marginTop: 100 }}>
-            <Text
-              style={[
-                GlobalStyles.title,
-                { color: "#F5FCFF", fontSize: 50 }, // white
-              ]}
-            >
-              {question.operand1} {question.operator} {question.operand2} = ?
+            <Text style={[GlobalStyles.text, { paddingTop: 20 }]}>
+              {Math.floor(timeLeft / 60)}:{("0" + (timeLeft % 60)).slice(-2)}
             </Text>
           </View>
-          <View
-            style={{
-              flex: 3,
 
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 20,
-            }}
-          >
-            <View style={{ height: 40, justifyContent: "center" }}>
-              {resultMessage ? (
-                <Text
+          {!gameActive && !showResults && (
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "space-evenly",
+                alignItems: "center",
+              }}
+            >
+              <Text style={[GlobalStyles.title, { textAlign: "center" }]}>
+                Let's test your Arithmetics!
+              </Text>
+              <TouchableOpacity style={styles.button} onPress={startGame}>
+                <Text style={GlobalStyles.text}>Start</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {gameActive && (
+            <>
+              {streakMessage && (
+                <Animated.Text
                   style={[
                     GlobalStyles.title,
                     {
-                      fontSize: 26,
-                      color: isCorrect ? "#4bea69" : "#d22209", // 초록색 정답, 빨간색 오답
+                      position: "absolute",
+                      top: 100,
+                      flex: 0.5,
+                      marginTop: 10,
+                      color: "#FFD700",
+                      opacity: streakAnim,
                     },
                   ]}
                 >
-                  {resultMessage}
+                  {streakMessage}
+                </Animated.Text>
+              )}
+              <Animated.Text
+                style={[
+                  GlobalStyles.title,
+                  {
+                    position: "absolute",
+                    top: 100,
+                    flex: 0.5,
+                    marginTop: 10,
+                    color: "#FFF006",
+                    opacity: fadeAnim,
+                  },
+                ]}
+              >
+                Type your answer
+              </Animated.Text>
+              <View
+                style={{ flex: 1.7, justifyContent: "center", marginTop: 100 }}
+              >
+                <Text
+                  style={[
+                    GlobalStyles.title,
+                    { color: "#F5FCFF", fontSize: 50 },
+                  ]}
+                >
+                  {question.operand1} {question.operator} {question.operand2} =
+                  ?
                 </Text>
-              ) : null}
+              </View>
+              <View
+                style={{
+                  flex: 3,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 20,
+                }}
+              >
+                <View style={{ height: 40, justifyContent: "center" }}>
+                  {resultMessage && (
+                    <Text
+                      style={[
+                        GlobalStyles.title,
+                        {
+                          fontSize: 26,
+                          color: isCorrect ? "#4bea69" : "#d22209",
+                        },
+                      ]}
+                    >
+                      {resultMessage}
+                    </Text>
+                  )}
+                </View>
+                <TextInput
+                  style={GlobalStyles.input}
+                  value={userAnswer}
+                  onChangeText={setUserAnswer}
+                  keyboardType="numeric"
+                  placeholder="type here"
+                  placeholderTextColor="#f9f4a5"
+                />
+                <TouchableOpacity
+                  style={[styles.button]}
+                  onPress={handleCheckAnswer}
+                >
+                  <Text style={[GlobalStyles.text, { color: "#f5fcff" }]}>
+                    Next
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
+          {showResults && (
+            <View style={styles.results}>
+              <View>
+                <Text style={GlobalStyles.title}>XP earned</Text>
+                <Text style={[GlobalStyles.title, { marginTop: 20 }]}>
+                  {earnedXP}
+                </Text>
+              </View>
+              <View>
+                <TouchableOpacity
+                  style={styles.resultsButton}
+                  onPress={handleContinue}
+                >
+                  <Text style={GlobalStyles.text}>Continue</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.resultsButton}
+                  onPress={() => navigation.navigate("Home")}
+                >
+                  <Text style={GlobalStyles.text}>Leave</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <TextInput
-              style={GlobalStyles.input}
-              value={userAnswer}
-              onChangeText={setUserAnswer}
-              keyboardType="numeric"
-              placeholder="type here"
-              placeholderTextColor="#f9f4a5"
-            />
-            <TouchableOpacity
-              style={[styles.button]}
-              onPress={handleCheckAnswer}
-            >
-              <Text style={[GlobalStyles.text, { color: "#f5fcff" }]}>
-                Next
-              </Text>
-            </TouchableOpacity>
-          </View>
+          )}
         </View>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
@@ -211,6 +296,21 @@ const styles = StyleSheet.create({
   button: {
     width: 200,
     padding: 15,
+    backgroundColor: "#2bb26b",
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  results: {
+    flex: 1,
+    justifyContent: "space-evenly",
+    alignItems: "center",
+  },
+  resultsButton: {
+    width: 200,
+    padding: 15,
+    margin: 15,
     backgroundColor: "#2bb26b",
     borderRadius: 10,
     alignItems: "center",

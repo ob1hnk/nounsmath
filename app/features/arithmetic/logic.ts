@@ -16,7 +16,6 @@ export function generateQuestion(): Question {
   if (operator === "+") {
     answer = operand1 + operand2;
   } else if (operator === "-") {
-    // 빼기의 결과가 음수가 되지 않도록 순서 조정
     if (operand1 < operand2) {
       [operand1, operand2] = [operand2, operand1];
     }
